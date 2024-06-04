@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<meta charset="UTF-8">
+<html>
+<head>
+    <title>WebGL Intro</title>
+    <style>
+        html, body {
+            margin: 0; /* Make sure that there is no margin around the canvas */
+            overflow: hidden; /* Make sure we don't get scroll bars. */
+        }
+
+        canvas {
+            display: block; /* The default display, inline, would add a small margin below the canvas */
+        }
+    </style>
+
+    <!--
+        A 2D WebGL app in which "points" move around in the browser window, bouncing
+        off the edges.  The animation can be paused and restarted by pressing the
+        space key.
+            If the user clicks or clicks-and-drags with the mouse, all of the
+        points head towards the mouse position, except if the user shift-clicks, the
+        positions and velocities of the points are re-initialized.
+    -->
+
+    <script type="x-shader/x-vertex" id="vshader-source">
+        attribute vec2 a_coords; // vertex position in standard canvas pixel coords
+        uniform float u_width;   // width of canvas
+        uniform float u_height;  // height of canvas
+
+        uniform float u_pointSize; //+
+        uniform int u_type;	//+
+        attribute vec3 color; //+
+        varying vec3 outcolor; //+
+        varying float type;//+
+
+        void main() {
+            float x,y;  // vertex position in clip coordinates
+
+            x = a_coords.x/u_width * 2.0 - 1.0;  // convert pixel coords to clip coords
+            y = 1.0 - a_coords.y/u_height * 2.0;
+
+            gl_Position = vec4(x, y, 0.0, 1.0);
+            gl_PointSize = u_pointSize;
+
+            outcolor = vec3(color); //+
+            type = float(u_type); //+
+        }
+
+    </script>
+
+    <script type="x-shader/x-fragment" id="fshader-source">
+    #ifdef GL_FRAGMENT_PRECISION_HIGH
+       precision highp float;
+    #else
+       precision mediump float;
+    #endif
+
+   		varying vec3 outcolor;
+		varying float type;
+
+        const float pi=3.14;
+        float polygon(float s, float apotheme, vec2 p)
+		{
+            float ang = atan(p.x,p.y);
+            ang -= floor(ang/pi/2.*s)/s*pi*2.-pi/s;
+            return cos(atan(p.x,p.y) - floor(atan(p.x,p.y)/pi/2.*s)/s*pi*2.-pi/s) * length(p) < apotheme ? 1. : 0.;
+		}
+
+        void main()
+		{
+            float dist=distance( vec2(0.5), gl_PointCoord );
+            gl_FragColor=vec4(outcolor, 1.0);//RGBA
+            if ( type> 4.0 )
+             {
+                if ( dist > polygon( type , 0.4, vec2(gl_PointCoord.x - 0.5, gl_PointCoord.y- 0.5)))
+                {
+                discard;
+                }
+             }
+        }
+    </script>
+    <script src="index.js"></script>
+</head>
+<body onload="init()">
+<noscript>Sorry, this page requires JavaScript.</noscript>
+</body>
+</html>
+
